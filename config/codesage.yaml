@@ -1,0 +1,53 @@
+# ===== CodeSage 리뷰 정책 설정 =====
+# 하이퍼파라미터(리뷰 동작을 결정하는 값)를 코드와 분리해 관리합니다.
+# 이 파일을 수정하면 코드 변경 없이 리뷰 정책을 바꿀 수 있습니다.
+
+review:
+  # 정밀 리뷰용 모델 / 요약용 모델 (모델 라우팅)
+  model: "claude-opus-4-8"
+  summary_model: "claude-haiku-4-5"
+
+  # LLM 응답 최대 토큰 수
+  max_tokens: 4096
+
+  # 중점적으로 볼 관점 (팀 우선순위 순서대로)
+  focus:
+    - security
+    - bug
+    - performance
+    - style
+
+  # 리뷰에서 제외할 파일 패턴 (노이즈 제거)
+  # ※ fnmatch glob 기준. *.lock 은 .lock 으로 끝나는 파일만 잡으므로
+  #   package-lock.json 같은 lockfile은 별도로 명시해야 한다.
+  ignore:
+    - "*.lock"              # yarn.lock, poetry.lock, Cargo.lock
+    - "package-lock.json"   # npm lockfile (*.lock 에 안 걸림)
+    - "pnpm-lock.yaml"
+    - "*-lock.json"
+    - "*.min.js"
+    - "dist/**"
+    - "build/**"
+    - "**/migrations/**"
+    - "**/__snapshots__/**"
+
+  # 게시할 최소 심각도. 이보다 낮은 코멘트는 버림.
+  # 값: critical > warning > suggestion
+  min_severity: "suggestion"
+
+  # 한 PR에 달 인라인 코멘트 최대 개수 (스팸 방지)
+  max_comments: 20
+
+  # 팀 컨벤션을 자연어로 주입 (LLM 프롬프트에 그대로 들어감)
+  guidelines: |
+    - 모든 함수에 type hint를 사용한다.
+    - print() 대신 logger를 사용한다.
+    - DB 쿼리는 반드시 parameterized query를 사용한다 (SQL Injection 방지).
+    - 비밀 정보(키, 비밀번호)를 하드코딩하지 않는다.
+
+# 청킹/필터링 관련
+diff:
+  # 한 hunk가 이 줄 수를 넘으면 분할
+  max_hunk_lines: 200
+  # 자동 생성으로 판단해 건너뛸 파일 표식
+  skip_generated: true

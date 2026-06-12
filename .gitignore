@@ -1,0 +1,18 @@
+# --- Secrets ---
+.env
+*.pem
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# --- DB (로컬 sqlite 등) ---
+*.db
+
+# --- OS ---
+.DS_Store

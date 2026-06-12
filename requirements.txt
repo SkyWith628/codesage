@@ -1,0 +1,29 @@
+# --- Web / API ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# --- Queue / Cache ---
+redis==5.2.1
+
+# --- LLM ---
+anthropic==0.42.0
+
+# --- HTTP client (GitHub API) ---
+httpx==0.28.1
+
+# --- Config ---
+pyyaml==6.0.2
+
+# --- 정적 분석(Linter) ---
+# Python 정적 분석기. JS는 eslint(node 생태계)를 별도 설치해 어댑터가 감지.
+ruff==0.8.4
+
+# --- DB (optional persistence) ---
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+
+# --- Dev / Test ---
+pytest==8.3.4
+pytest-asyncio==0.25.0

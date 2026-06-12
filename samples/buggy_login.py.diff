@@ -1,0 +1,20 @@
+diff --git a/auth.py b/auth.py
+index 1111111..2222222 100644
+--- a/auth.py
++++ b/auth.py
+@@ -1,6 +1,15 @@
+ import jwt
++import sqlite3
+
+-def login(username, password):
+-    return True
++SECRET = "my-super-secret-key"
++
++def login(username, password):
++    conn = sqlite3.connect("users.db")
++    query = "SELECT * FROM users WHERE name = '" + username + "'"
++    user = conn.execute(query).fetchone()
++    if user and user[2] == password:
++        token = jwt.encode({"user": username}, SECRET)
++        return token
++    return None

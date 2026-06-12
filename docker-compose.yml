@@ -1,0 +1,66 @@
+# ===== CodeSage 로컬 개발 스택 =====
+# api(수신) + worker(처리) + redis(큐) + postgres(기록)을 한 번에 띄운다.
+#   docker compose up -d
+
+services:
+  api:
+    build: .
+    env_file: .env
+    environment:
+      # 컨테이너 간 통신은 서비스 이름으로 (localhost 아님)
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql+asyncpg://codesage:codesage@postgres:5432/codesage
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  worker:
+    build: .
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql+asyncpg://codesage:codesage@postgres:5432/codesage
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    # ★ 같은 이미지지만 worker 모드로 실행
+    command: python -m app.queue.worker
+    # 부하가 늘면 이 숫자만 키우면 됨 (수평 확장)
+    deploy:
+      replicas: 1
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: codesage
+      POSTGRES_PASSWORD: codesage
+      POSTGRES_DB: codesage
+    ports:
+      - "5432:5432"
+    volumes:
+      - codesage_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codesage"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  codesage_pgdata:

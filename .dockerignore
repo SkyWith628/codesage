@@ -1,0 +1,19 @@
+# Docker 빌드 컨텍스트에서 제외 (이미지 크기/빌드 속도 최적화)
+.venv/
+venv/
+.git/
+.gitignore
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.env
+*.pem
+*.db
+.DS_Store
+
+# 문서/테스트는 런타임에 불필요
+docs/
+tests/
+*.md
+프로젝트.md
