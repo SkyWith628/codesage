@@ -10,13 +10,15 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 
 import redis.asyncio as redis
 
 from app.core.config import settings
 from app.db.session import init_db
-from app.models.schemas import ReviewJob
+from app.models.schemas import FollowupJob, ReviewJob
+from app.review.followup import run_followup
 from app.review.pipeline import run_review
 
 logging.basicConfig(
@@ -40,12 +42,24 @@ async def consume_loop() -> None:
 
         _, raw = item  # (queue_key, value)
         try:
-            job = ReviewJob.model_validate_json(raw)
-            logger.info("처리 시작: %s#%s", job.repo, job.pr_number)
-            await run_review(job)
-            logger.info("처리 완료: %s#%s", job.repo, job.pr_number)
+            await _dispatch(raw)
         except Exception:  # noqa: BLE001 - 한 작업 실패가 worker를 죽이면 안 됨
             logger.exception("작업 처리 실패 (건너뜀): %s", raw[:200])
+
+
+async def _dispatch(raw: str) -> None:
+    """작업 JSON의 type 판별자를 보고 알맞은 핸들러로 보낸다."""
+    job_type = json.loads(raw).get("type", "review")
+    if job_type == "followup":
+        job = FollowupJob.model_validate_json(raw)
+        logger.info("후속 처리 시작: %s#%s", job.repo, job.pr_number)
+        await run_followup(job)
+        logger.info("후속 처리 완료: %s#%s", job.repo, job.pr_number)
+    else:
+        job = ReviewJob.model_validate_json(raw)
+        logger.info("리뷰 처리 시작: %s#%s", job.repo, job.pr_number)
+        await run_review(job)
+        logger.info("리뷰 처리 완료: %s#%s", job.repo, job.pr_number)
 
 
 if __name__ == "__main__":

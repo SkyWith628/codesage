@@ -29,8 +29,16 @@ class Settings(BaseSettings):
 
     # --- GitHub ---
     WEBHOOK_SECRET: str = "change-me"
-    GITHUB_TOKEN: str = ""
+    GITHUB_TOKEN: str = ""              # PAT 폴백 (App 미설정 시 사용)
     GITHUB_API_BASE: str = "https://api.github.com"
+
+    # 대화형 후속을 트리거하는 멘션 문자열 (이 단어로 봇을 호출).
+    BOT_MENTION: str = "@codesage"
+
+    # --- GitHub App (설치 토큰 자동 발급) ---
+    GITHUB_APP_ID: str = ""
+    GITHUB_APP_PRIVATE_KEY: str = ""       # PEM 본문 (줄바꿈은 \n으로 이스케이프 가능)
+    GITHUB_APP_PRIVATE_KEY_PATH: str = ""  # 또는 PEM 파일 경로 (위보다 우선)
 
     # --- Redis ---
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -51,6 +59,22 @@ class Settings(BaseSettings):
     def db_enabled(self) -> bool:
         """DATABASE_URL이 있으면 True. 없으면 DB 저장을 건너뜀."""
         return bool(self.DATABASE_URL)
+
+    @property
+    def github_app_private_key(self) -> str:
+        """
+        App 비밀키(PEM)를 반환한다.
+        PATH가 지정되면 파일에서 읽고, 아니면 인라인 키의 \\n 이스케이프를 복원한다.
+        """
+        if self.GITHUB_APP_PRIVATE_KEY_PATH:
+            return Path(self.GITHUB_APP_PRIVATE_KEY_PATH).read_text(encoding="utf-8")
+        return self.GITHUB_APP_PRIVATE_KEY.replace("\\n", "\n")
+
+    @property
+    def github_app_enabled(self) -> bool:
+        """App ID와 비밀키(인라인 또는 파일)가 모두 있으면 App 모드."""
+        has_key = bool(self.GITHUB_APP_PRIVATE_KEY or self.GITHUB_APP_PRIVATE_KEY_PATH)
+        return bool(self.GITHUB_APP_ID) and has_key
 
 
 @lru_cache

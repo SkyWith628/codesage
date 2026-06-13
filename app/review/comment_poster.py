@@ -77,7 +77,7 @@ def _post_to_console(job: ReviewJob, result: ReviewResult) -> None:
 
 async def _post_to_github(job: ReviewJob, result: ReviewResult) -> None:
     """운영: GitHub PR에 게시."""
-    gh = GitHubClient(job.repo)
+    gh = GitHubClient(job.repo, job.installation_id)
     await gh.post_summary(job.pr_number, _build_summary_body(result))
     for c in result.comments:
         emoji = _SEVERITY_EMOJI[c.severity]

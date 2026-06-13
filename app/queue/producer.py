@@ -12,7 +12,7 @@ import logging
 import redis.asyncio as redis
 
 from app.core.config import settings
-from app.models.schemas import ReviewJob
+from app.models.schemas import FollowupJob, ReviewJob
 
 logger = logging.getLogger(__name__)
 
@@ -31,4 +31,11 @@ async def enqueue_review_job(job: ReviewJob) -> None:
     """리뷰 작업을 큐 왼쪽에 push한다 (FIFO: worker는 오른쪽에서 pop)."""
     client = _get_client()
     await client.lpush(settings.QUEUE_KEY, job.model_dump_json())
-    logger.info("작업 등록: %s#%s (action=%s)", job.repo, job.pr_number, job.action)
+    logger.info("리뷰 작업 등록: %s#%s (action=%s)", job.repo, job.pr_number, job.action)
+
+
+async def enqueue_followup_job(job: FollowupJob) -> None:
+    """대화형 후속 작업을 큐에 push한다."""
+    client = _get_client()
+    await client.lpush(settings.QUEUE_KEY, job.model_dump_json())
+    logger.info("후속 작업 등록: %s#%s", job.repo, job.pr_number)

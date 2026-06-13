@@ -45,8 +45,14 @@ python -c "import secrets; print(secrets.token_hex(32))"
 ### 이벤트 구독 (Subscribe to events)
 
 ```
-☑ Pull request
+☑ Pull request                 # PR 열림/푸시 → 자동 리뷰
+☑ Issue comment                # PR 대화 코멘트에서 @codesage 멘션 → 답변
+☑ Pull request review comment  # 인라인 코드 스레드에서 @codesage 멘션 → 답글
 ```
+
+> 뒤의 두 이벤트는 **대화형 후속**(코멘트에 `@codesage`로 질문 → AI 답변)용입니다.
+
+권한도 위 표에 더해 댓글을 읽기 위해 **Issues: Read & write** (issue comment 답변용)를 추가하세요.
 
 생성 후 화면에서 다음 두 가지를 확보:
 - **App ID** (숫자)
@@ -56,18 +62,26 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 ## 2. .env 채우기
 
+> **인증 방식 두 가지** — 둘 중 하나만 채우면 됩니다.
+
+**정석(운영 권장) — GitHub App 설치 토큰**
+App ID + Private key를 넣으면 CodeSage가 webhook의 `installation_id`로
+**설치 토큰(JWT 서명 → 1시간짜리 토큰)을 자동 발급·캐싱**해 인증합니다.
+
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...
 WEBHOOK_SECRET=<1번에서 만든 secret>
-GITHUB_TOKEN=<설치 토큰 또는 PAT — 아래 참고>
+GITHUB_APP_ID=<App ID 숫자>
+GITHUB_APP_PRIVATE_KEY_PATH=secrets/codesage.private-key.pem   # 다운로드한 .pem 경로
+# BOT_MENTION=@codesage   # 대화형 후속을 부르는 멘션 (기본값)
 ```
 
-> **인증 방식 두 가지**
-> - **간단(개발용)**: Personal Access Token(PAT)을 `GITHUB_TOKEN`에 넣어 시작.
->   `repo` 또는 fine-grained의 `Pull requests: write` 권한.
-> - **정석(운영용)**: GitHub App의 App ID + Private key로 **Installation Access Token**을
->   런타임에 발급(JWT 서명 → 토큰 교환). `github_client.py`에 토큰 발급 로직 추가가
->   다음 확장 작업. (현재 골격은 `GITHUB_TOKEN` 직접 사용 방식)
+**간단(개발용) — PAT 폴백**
+App 설정을 비우면 개인 액세스 토큰을 사용합니다(fine-grained의 `Pull requests: write`).
+
+```bash
+GITHUB_TOKEN=<PAT>
+```
 
 ---
 
@@ -88,6 +102,8 @@ CodeSage App 페이지 → **Install App** → 리뷰받을 레포 선택 → In
 ```
 PR opened/synchronize → GitHub가 /webhook 으로 이벤트 전송
   → CodeSage가 리뷰 → PR에 요약 + 인라인 코멘트 게시
+
+코멘트에 "@codesage 이거 왜 이렇게 짰어?" → 봇이 같은 스레드에 답변 (대화형 후속)
 ```
 
 ---
@@ -127,7 +143,8 @@ ngrok http 8000
 ```
 □ Webhook 서명(HMAC) 검증 활성 — 가짜 이벤트로 인한 LLM 비용 폭탄 차단
 □ GitHub App 최소 권한 (PR read/write + Contents read only)
+□ App 설치 토큰 사용 → 광범위한 PAT 대신 "이 레포·1시간" 범위 토큰 (최소 권한)
 □ .env, *.pem 파일 git 커밋 금지 (.gitignore 확인)
-□ ANTHROPIC_API_KEY / GITHUB_TOKEN 은 Secrets Manager 권장 (운영)
+□ ANTHROPIC_API_KEY / App Private key 는 Secrets Manager 권장 (운영)
 □ Rate limiting (동일 레포 과도 이벤트 방어) — 운영 전 추가 권장
 ```

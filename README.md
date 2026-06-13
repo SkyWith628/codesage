@@ -17,7 +17,7 @@
 | ② | 인라인 리뷰 (버그/보안/성능/스타일) | ✅ |
 | ③ | 정적 분석(ruff) 통합 | ✅ |
 | ④ | 증분 리뷰 (새 커밋만 재리뷰) | ✅ |
-| ⑤ | 대화형 후속 (코멘트 답글) | 📋 로드맵 |
+| ⑤ | 대화형 후속 (`@codesage` 멘션에 AI 답변) | ✅ |
 | ⑥ | 컨벤션 학습 (RAG) | 📋 로드맵 |
 
 ---
@@ -107,13 +107,14 @@ docker compose logs -f worker   # 리뷰 결과 확인
 ## 🔌 실제 GitHub 연동 (운영 모드)
 
 1. **GitHub App 생성**: Settings → Developer settings → New GitHub App
-   - 권한: `Pull requests: Read & Write`, `Contents: Read-only`
-   - 이벤트 구독: `Pull request`
-   - Webhook URL: `https://<your-server>/webhook`
-   - Webhook secret → `.env`의 `WEBHOOK_SECRET`
-2. `.env`에 `GITHUB_TOKEN`, `ANTHROPIC_API_KEY` 입력
-3. 서버 배포 후 App을 리뷰받을 레포에 **Install**
-4. 끝 — 이후 그 레포의 모든 PR이 자동 리뷰됩니다.
+   - 권한: `Pull requests: Read & Write`, `Issues: Read & Write`, `Contents: Read-only`
+   - 이벤트 구독: `Pull request`, `Issue comment`, `Pull request review comment`
+   - Webhook URL: `https://<your-server>/webhook` / secret → `.env`의 `WEBHOOK_SECRET`
+   - **App ID + Private key(.pem)** 확보
+2. `.env`에 `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY_PATH`, `ANTHROPIC_API_KEY` 입력
+   (App을 안 쓰면 `GITHUB_TOKEN`(PAT)으로 폴백 가능)
+3. 서버 배포 후 App을 리뷰받을 레포에 **Install** — 설치 토큰은 자동 발급됩니다.
+4. 끝 — 이후 그 레포의 PR은 자동 리뷰되고, 코멘트에 `@codesage`로 질문하면 답합니다.
 
 > 📖 권한 설정·인증 방식·ngrok 로컬 테스트·트러블슈팅 전체 절차는
 > **[docs/github-app-setup.md](docs/github-app-setup.md)** 참고.
@@ -139,7 +140,7 @@ review:
 ## 🧪 테스트
 
 ```bash
-pytest          # 38개 테스트
+pytest          # 55개 테스트
 ```
 
 | 파일 | 커버리지 |
@@ -152,6 +153,9 @@ pytest          # 38개 테스트
 | `test_webhook.py` | Webhook HTTP 경로 (서명·이벤트 필터·큐 등록) |
 | `test_comment_poster.py` | 콘솔/GitHub 게시 + 심각도 정렬 |
 | `test_pipeline.py` | 로컬 모드 전체 흐름 (mock LLM) |
+| `test_github_auth.py` | App JWT(RS256)·설치 토큰 발급·캐싱·PAT 폴백 |
+| `test_followup.py` | 멘션 트리거·루프 방지·답변 게시 경로 |
+| `test_worker_dispatch.py` | 큐 작업 타입 분기 (review/followup) |
 
 ---
 
@@ -181,9 +185,9 @@ codesage/
 - [x] 정적 분석 ruff 통합 (eslint 어댑터 포함)
 - [x] 증분 리뷰 (synchronize 시 변경분만)
 - [x] 프롬프트 인젝션 방어 + API 오류 우아한 처리
-- [ ] GitHub App Installation Token 자동 발급 (현재는 PAT)
+- [x] GitHub App Installation Token 자동 발급 (JWT→설치 토큰, 캐싱·PAT 폴백)
+- [x] 대화형 후속 (`@codesage` 멘션 → AI 답변, 인라인 스레드/PR 대화)
 - [ ] 운영 모드 Contents API 전체 파일 fetch (Linter 정확도↑)
-- [ ] 대화형 후속 (코멘트 답글에 AI 응답)
 - [ ] RAG 기반 레포 컨벤션 학습
 - [ ] 리뷰 품질 평가 루프 (👍/👎 → 프롬프트 개선)
 - [ ] 비용 대시보드 (토큰/시간 시각화)
