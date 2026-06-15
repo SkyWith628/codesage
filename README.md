@@ -7,6 +7,8 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)]()
 [![Gemini](https://img.shields.io/badge/LLM-Gemini-4285F4)]()
 
+📅 **개발 기간:** 2026.02 ~ 2026.04
+
 ---
 
 ## ✨ 핵심 기능
