@@ -7,8 +7,8 @@ pydantic-settings==2.7.1
 # --- Queue / Cache ---
 redis==5.2.1
 
-# --- LLM ---
-anthropic==0.42.0
+# --- LLM (Google Gemini) ---
+google-genai==2.8.0
 
 # --- HTTP client (GitHub API) ---
 httpx==0.28.1

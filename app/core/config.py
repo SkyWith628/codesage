@@ -22,10 +22,10 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # --- Claude API ---
-    ANTHROPIC_API_KEY: str = ""
-    REVIEW_MODEL: str = "claude-opus-4-8"
-    SUMMARY_MODEL: str = "claude-haiku-4-5"
+    # --- Gemini API (Google) ---
+    GEMINI_API_KEY: str = ""
+    REVIEW_MODEL: str = "gemini-2.5-flash"        # 리뷰용 (무료 티어, 품질 균형)
+    SUMMARY_MODEL: str = "gemini-2.5-flash-lite"  # 대화 응답용 (가벼움·높은 RPM)
 
     # --- GitHub ---
     WEBHOOK_SECRET: str = "change-me"
@@ -52,8 +52,8 @@ class Settings(BaseSettings):
 
     @property
     def llm_enabled(self) -> bool:
-        """Claude API 키가 있으면 True. 없으면 mock 리뷰로 동작."""
-        return bool(self.ANTHROPIC_API_KEY)
+        """Gemini API 키가 있으면 True. 없으면 mock 리뷰로 동작."""
+        return bool(self.GEMINI_API_KEY)
 
     @property
     def db_enabled(self) -> bool:

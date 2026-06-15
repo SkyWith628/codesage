@@ -5,7 +5,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.12-blue)]()
 [![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)]()
-[![Claude](https://img.shields.io/badge/LLM-Claude-orange)]()
+[![Gemini](https://img.shields.io/badge/LLM-Gemini-4285F4)]()
 
 ---
 
@@ -29,7 +29,7 @@ flowchart LR
     GH[GitHub PR] -- webhook --> API[API / FastAPI<br/>서명검증·즉시응답]
     API -- 작업 등록 --> Q[(Redis Queue)]
     Q -- 작업 소비 --> W[Worker<br/>6단계 리뷰 엔진]
-    W -- 리뷰 요청 --> C[Claude API]
+    W -- 리뷰 요청 --> C[Gemini API]
     W -- 코멘트 게시 --> GH
     W -- 리뷰 기록 --> DB[(PostgreSQL)]
 ```
@@ -57,7 +57,7 @@ flowchart TD
 
 ```bash
 # 1) 환경변수 준비
-cp .env.example .env          # ANTHROPIC_API_KEY는 비워둬도 mock 리뷰로 동작
+cp .env.example .env          # GEMINI_API_KEY는 비워둬도 mock 리뷰로 동작
 
 # 2) 의존성 설치
 pip install -r requirements.txt
@@ -87,7 +87,7 @@ Worker 터미널에 리뷰 결과가 출력됩니다:
 ============================================================
 ```
 
-> `ANTHROPIC_API_KEY`를 넣지 않으면 `[MOCK]` 리뷰가 나옵니다. 키를 넣으면 실제 Claude 리뷰가 생성됩니다.
+> `GEMINI_API_KEY`를 넣지 않으면 `[MOCK]` 리뷰가 나옵니다. 키를 넣으면 실제 Gemini 리뷰가 생성됩니다. (무료 키: https://aistudio.google.com/apikey)
 
 ---
 
@@ -111,7 +111,7 @@ docker compose logs -f worker   # 리뷰 결과 확인
    - 이벤트 구독: `Pull request`, `Issue comment`, `Pull request review comment`
    - Webhook URL: `https://<your-server>/webhook` / secret → `.env`의 `WEBHOOK_SECRET`
    - **App ID + Private key(.pem)** 확보
-2. `.env`에 `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY_PATH`, `ANTHROPIC_API_KEY` 입력
+2. `.env`에 `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY_PATH`, `GEMINI_API_KEY` 입력
    (App을 안 쓰면 `GITHUB_TOKEN`(PAT)으로 폴백 가능)
 3. 서버 배포 후 App을 리뷰받을 레포에 **Install** — 설치 토큰은 자동 발급됩니다.
 4. 끝 — 이후 그 레포의 PR은 자동 리뷰되고, 코멘트에 `@codesage`로 질문하면 답합니다.
@@ -194,4 +194,4 @@ codesage/
 
 ---
 
-*CodeSage v0.1.0 — Built with FastAPI + Claude*
+*CodeSage v0.1.0 — Built with FastAPI + Gemini*
