@@ -22,9 +22,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir /wheels/* \
     && rm -rf /wheels
 
-COPY app ./app
-COPY config ./config
-COPY scripts ./scripts
+# --chown으로 복사본을 codesage 소유로 만든다.
+# (원본 파일이 소유자 전용 권한이어도 비루트 유저가 읽을 수 있게 보장)
+COPY --chown=codesage:codesage app ./app
+COPY --chown=codesage:codesage config ./config
+COPY --chown=codesage:codesage scripts ./scripts
 
 USER codesage
 

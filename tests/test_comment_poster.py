@@ -33,7 +33,7 @@ async def test_github_mode_posts_summary_and_inline(monkeypatch):
     posts = {"summary": [], "inline": []}
 
     class FakeGitHub:
-        def __init__(self, repo):
+        def __init__(self, repo, installation_id=None):
             self.repo = repo
 
         async def post_summary(self, pr, body):
@@ -60,7 +60,7 @@ async def test_comments_sorted_critical_first(monkeypatch):
     order = []
 
     class FakeGitHub:
-        def __init__(self, repo):
+        def __init__(self, repo, installation_id=None):
             pass
 
         async def post_summary(self, pr, body):

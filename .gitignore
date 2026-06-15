@@ -1,12 +1,16 @@
 # --- Secrets ---
 .env
 *.pem
+# secrets/ 디렉터리는 마운트용으로 유지하되 내용물(키)은 커밋 금지
+secrets/*
+!secrets/.gitkeep
 
 # --- Python ---
 __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
+.venv-win/
 venv/
 .pytest_cache/
 .mypy_cache/

@@ -1,10 +1,20 @@
 # ===== CodeSage 로컬 개발 스택 =====
 # api(수신) + worker(처리) + redis(큐) + postgres(기록)을 한 번에 띄운다.
 #   docker compose up -d
+#
+# 운영 대비 강화 항목:
+#   - restart: unless-stopped → 죽으면 자동 부활 (수동 stop은 존중)
+#   - healthcheck            → 컨테이너가 '살아있음'을 넘어 '정상 동작' 확인
+#   - secrets 볼륨           → GitHub App 비밀키(.pem)를 이미지에 굽지 않고 주입
+#   - 리소스/로그 한계        → 메모리 폭주·로그 디스크 잠식 방지
 
 services:
   api:
     build: .
+    # api와 worker는 동일 이미지를 공유한다. 이름을 고정해 worker가 재사용하게 하면,
+    # 빌드가 1회만 일어나 느린 OneDrive build-context를 두 번 전송하다 충돌하는
+    # 병렬 빌드 race를 원천 차단한다.
+    image: codesage:local
     env_file: .env
     environment:
       # 컨테이너 간 통신은 서비스 이름으로 (localhost 아님)
@@ -12,19 +22,56 @@ services:
       DATABASE_URL: postgresql+asyncpg://codesage:codesage@postgres:5432/codesage
     ports:
       - "8000:8000"
+    restart: unless-stopped
+    # GitHub App 비밀키(.pem)를 읽기전용으로 주입. 로컬 시연만 하면 비어 있어도 무방.
+    # .env의 GITHUB_APP_PRIVATE_KEY_PATH가 /app/secrets/<파일명>을 가리키게 설정.
+    volumes:
+      - ./secrets:/app/secrets:ro
+    healthcheck:
+      # slim 이미지엔 curl이 없으므로 Python 표준 라이브러리로 /health 확인
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s   # 기동 유예 — 이 동안 실패해도 unhealthy로 치지 않음
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   worker:
-    build: .
+    # build 하지 않고 api가 만든 동일 이미지를 재사용 (병렬 빌드 race 방지).
+    image: codesage:local
     env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: postgresql+asyncpg://codesage:codesage@postgres:5432/codesage
+    restart: unless-stopped
+    volumes:
+      - ./secrets:/app/secrets:ro
+    healthcheck:
+      # Worker는 HTTP 포트가 없으므로, 큐(Redis)에 연결 가능한지로 생존을 판단.
+      # ping 실패 시 redis 라이브러리가 예외를 던져 종료코드가 비정상 → unhealthy.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import redis,os; redis.from_url(os.environ['REDIS_URL']).ping()"
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     depends_on:
       redis:
         condition: service_healthy
@@ -32,12 +79,21 @@ services:
         condition: service_healthy
     # ★ 같은 이미지지만 worker 모드로 실행
     command: python -m app.queue.worker
-    # 부하가 늘면 이 숫자만 키우면 됨 (수평 확장)
+    # 부하가 늘면 replicas만 키우면 됨 (수평 확장). 메모리 폭주 방지로 상한 설정.
     deploy:
       replicas: 1
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
     healthcheck:
@@ -48,6 +104,7 @@ services:
 
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: codesage
       POSTGRES_PASSWORD: codesage

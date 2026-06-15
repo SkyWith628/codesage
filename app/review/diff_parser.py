@@ -44,7 +44,7 @@ async def fetch_diff(job: ReviewJob, last_sha: str | None = None) -> str:
     """
     if job.local_diff is not None:
         return job.local_diff
-    gh = GitHubClient(job.repo)
+    gh = GitHubClient(job.repo, job.installation_id)
     if is_incremental(job.action, last_sha, job.head_sha):
         return await gh.fetch_compare_diff(last_sha, job.head_sha)  # type: ignore[arg-type]
     return await gh.fetch_pr_diff(job.pr_number)

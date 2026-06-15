@@ -45,7 +45,7 @@ async def test_fetch_diff_incremental_calls_compare(monkeypatch):
     calls = {}
 
     class FakeGitHub:
-        def __init__(self, repo):
+        def __init__(self, repo, installation_id=None):
             calls["repo"] = repo
 
         async def fetch_compare_diff(self, base, head):
@@ -72,7 +72,7 @@ async def test_fetch_diff_full_mode_calls_pr_diff(monkeypatch):
     calls = {}
 
     class FakeGitHub:
-        def __init__(self, repo):
+        def __init__(self, repo, installation_id=None):
             pass
 
         async def fetch_pr_diff(self, pr_number):
