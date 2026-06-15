@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -35,7 +35,10 @@ class ReviewRun(Base):
     output_tokens: Mapped[int] = mapped_column(default=0)
     duration_ms: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc)
+        # timezone=True → Postgres 'TIMESTAMP WITH TIME ZONE'.
+        # default 값이 tz-aware(datetime.now(timezone.utc))라 컬럼도 aware여야 일치.
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
     )
 
     comments: Mapped[list["ReviewCommentRow"]] = relationship(
